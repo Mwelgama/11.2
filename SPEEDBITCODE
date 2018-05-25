@@ -1,0 +1,111 @@
+ // This #include statement was automatically added by the Particle IDE. 
+#include "Adafruit_MQTT/Adafruit_MQTT.h" 
+#include "Adafruit_MQTT/Adafruit_MQTT_SPARK.h" 
+#include "Adafruit_MQTT/Adafruit_MQTT.h" 
+/************************* Adafruit.io Setup *********************************/ 
+#define AIO_SERVER      "io.adafruit.com" 
+#define AIO_SERVERPORT  1883                   // use 8883 for SSL 
+#define AIO_USERNAME    "Marshalwelgama" 
+#define AIO_KEY         "c4db5c6bc5ab46edb821db6885f80233" 
+
+/************ Global State *******************************************/ 
+TCPClient TheClient; 
+
+Adafruit_MQTT_SPARK mqtt(&TheClient,AIO_SERVER,AIO_SERVERPORT,AIO_USERNAME,AIO_KEY); 
+/****************************** Feeds ***************************************/ 
+Adafruit_MQTT_Publish test = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/test"); 
+
+//*************************************************************************************************************
+//LINK TO VIEW DATA LOG/GRAPH IS https://drive.google.com/open?id=1yO2c6OtnXF7y2kjfJpsbDHOe_6ZFmW2TP5MlPqaTFJI 
+//*************************************************************************************************************
+
+int x_axis = A5;
+int y_axis = A4;
+int z_axis = A3;
+int x_Read;
+int y_Read;
+int z_Read;
+int x_Start;
+int y_Start;
+int z_Start;
+int new_X;
+int new_Y;
+int new_Z;
+int led1 = D7; 
+int inst_V;
+
+
+int i;
+String data;
+int move;
+
+unsigned long interval = 30000;
+unsigned long previousMillis = 0;
+
+void setup() {
+
+  pinMode(led1, OUTPUT);
+  pinMode(x_axis, INPUT);
+  pinMode(y_axis, INPUT);
+  pinMode(z_axis, INPUT);
+  
+ x_Start = analogRead(x_axis);
+ y_Start = analogRead(y_axis);
+ z_Start = analogRead(z_axis);
+
+}
+
+void loop() {
+  x_Read = analogRead(x_axis);
+  y_Read = analogRead(y_axis);
+  z_Read = analogRead(z_axis);
+  digitalWrite(led1, LOW); //LED will be off indicating that data is now being gathered
+
+//Process of eliminating default acceleration values
+new_X = x_Read - x_Start;
+new_Y = y_Read - y_Start;
+new_Z = z_Read - z_Start;
+
+inst_V = abs(new_X + new_Y + new_Z) /3;
+
+unsigned long currentMillis = millis();
+//Serial.println(currentMillis);; 
+//delay(500);
+
+if (new_X >= 60 || new_Y >= 60 || new_Z >= 60 )
+    if (inst_V >= 60)
+    {
+        
+        data = inst_V;
+        Serial.println(data);
+        Particle.publish("dataAccel", data); // WILL PUBLISH DATA TO A EXCEL FILE ON GOOGLE DRIVE USING IFTTT
+        i = i + 1; // COUNTER TO FIND OUT DATA POINTS
+        //Serial.printlnf("Acceleration: %i", inst_V); *************** THIS SECTION WAS USED FOR ADAFRUIT GRAPHING
+         //if( mqtt.Update() ){ 
+         //test.publish(inst_V);
+         //}
+        delay(80);
+        
+    }
+    
+  else
+  {
+
+      move = 0;
+
+  }
+  
+
+
+if (currentMillis - previousMillis >= interval)
+{
+    digitalWrite(led1, HIGH); //LED will show indicating that test is done
+    Serial.println("Testing Done");
+    Serial.printlnf("%i Data Points Captured", i);
+    delay(10000);
+    previousMillis = currentMillis + 10000;
+}
+
+}
+
+      
